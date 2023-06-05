@@ -1,0 +1,2 @@
+# Deep-Embedded-Clustering-generalisability-and-adaptation-for-mixed-data-types
+This code was used for a scientific publication where we we recreated a Deep Embedded Clustering model on a populations of ICU patients. We tested the model's generalisability onto a population of ICU patients from anoterh hospital. We Aslo altered the model into the X-DEC model, which uses an XVAE, and tested its generalisability as well.
