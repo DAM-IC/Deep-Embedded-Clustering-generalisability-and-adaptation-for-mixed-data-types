@@ -5,7 +5,7 @@ This code was used for a scientific publication where we recreated a Deep Embedd
 See the diagram below for some guidance on how to use and set-up the code to work on your computer.
 
 ![Guide to using the code](https://github.com/DAM-IC/Deep-Embedded-Clustering-generalisability-and-adaptation-for-mixed-data-types/assets/29426481/aae11d9e-b018-4145-91cc-197164493289)
-### Someuseful links
+### Some useful links
 - [How to load environments in Anaconda](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)
 - [How to install CUDA](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html)
 
