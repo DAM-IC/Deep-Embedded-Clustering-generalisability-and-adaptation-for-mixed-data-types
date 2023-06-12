@@ -37,9 +37,9 @@ dependencies:
   - brotlipy=0.7.0=py39h2bbff1b_1003
   - bzip2=1.0.8=he774522_0
   - c-ares=1.18.1=h2bbff1b_0
-  - ca-certificates=2023.01.10=haa95532_0
+  - ca-certificates=2023.5.7=h56e8100_0
   - cairo=1.16.0=h63a05c6_1001
-  - certifi=2022.12.7=py39haa95532_0
+  - certifi=2023.5.7=pyhd8ed1ab_0
   - cffi=1.15.0=py39h2bbff1b_1
   - chardet=4.0.0=py39haa95532_1003
   - charset-normalizer=2.0.4=pyhd3eb1b0_0
@@ -48,6 +48,7 @@ dependencies:
   - colorama=0.4.4=pyhd3eb1b0_0
   - cookiecutter=1.7.3=pyh6c4a22f_1
   - cryptography=36.0.0=py39h21b164f_0
+  - cudatoolkit=11.2.2=h933977f_10
   - cycler=0.11.0=pyhd3eb1b0_0
   - dash=2.3.1=pyhd8ed1ab_0
   - dash-renderer=1.9.1=pyhd8ed1ab_0
@@ -91,7 +92,6 @@ dependencies:
   - isort=5.9.3=pyhd3eb1b0_0
   - itsdangerous=2.0.1=pyhd3eb1b0_0
   - jedi=0.18.1=py39haa95532_1
-  - jinja2=2.11.3=pyhd3eb1b0_0
   - jinja2-time=0.2.0=pyhd3eb1b0_2
   - joblib=1.1.0=pyhd8ed1ab_0
   - jpeg=9d=h2bbff1b_0
@@ -119,7 +119,6 @@ dependencies:
   - lightgbm=3.3.2=py39h415ef7b_0
   - llvmlite=0.38.0=py39h23ce68f_0
   - lz4-c=1.9.3=h2bbff1b_1
-  - markupsafe=1.1.1=py39h2bbff1b_0
   - matplotlib=3.5.1=py39haa95532_1
   - matplotlib-base=3.5.1=py39hd77b12b_1
   - matplotlib-inline=0.1.2=pyhd3eb1b0_2
@@ -138,9 +137,8 @@ dependencies:
   - notebook=6.4.12=py39haa95532_0
   - numba=0.55.1=py39hf11a4ad_0
   - numexpr=2.8.1=py39hb80d3ca_0
-  - numpy-base=1.21.5=py39hc2deb75_0
   - numpydoc=1.2=pyhd3eb1b0_0
-  - openssl=1.1.1t=h2bbff1b_0
+  - openssl=1.1.1q=h8ffe710_0
   - packaging=21.3=pyhd3eb1b0_0
   - pandas=1.4.1=py39hd77b12b_0
   - pandocfilters=1.5.0=pyhd3eb1b0_0
@@ -284,10 +282,12 @@ dependencies:
       - gower==0.1.2
       - grpcio==1.44.0
       - h5py==3.6.0
+      - jinja2==3.1.2
       - keras==2.8.0
       - keras-preprocessing==1.1.2
       - libclang==13.0.0
       - markdown==3.3.6
+      - markupsafe==2.1.3
       - miceforest==5.4.0
       - numpy==1.22.3
       - oauthlib==3.2.0
