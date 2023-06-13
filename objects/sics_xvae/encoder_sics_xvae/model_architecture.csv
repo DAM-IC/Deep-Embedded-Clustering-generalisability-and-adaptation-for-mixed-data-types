@@ -1,0 +1,15 @@
+,value
+s1_input_size,61
+s2_input_size,19
+ds1,50
+ds2,5
+ds12,38
+ls,25
+weighted,True
+act,elu
+dropout,0.1
+distance,mmd
+beta,200
+epochs,250
+bs,64
+save_model,False
