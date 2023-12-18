@@ -88,9 +88,9 @@ def dec_cluster(encoder, feature_array, y, n_classes, seed=5192,
     y_pred : ndarray
         The cluster labels per sample.
     q : ndarray
-        the soft labels.
+        The soft labels.
     centroids : ndarray, optional
-        the centroids of the clusters in the Z-space. Only returned if
+        The centroids of the clusters in the Z-space. Only returned if
         return_extra=True.
     model : Keras object
         The autoencoder model.
@@ -321,7 +321,7 @@ def cluster_mlp_autoencoder(feature_array, n_classes, y=None, neurons_h=64,
                             order_by_size = False,
                             return_extra = False, verbose = 0):
     '''
-    Perform Deep Embedded Clustering
+    Train a Deep Embedded Clustering model
 
     Parameters
     ----------
@@ -484,7 +484,7 @@ def cluster_mlp_vae(feature_array, n_classes, y=None, ds1 = 52,ds2 = 5,
                     check_stability = False, stability_check_it = 100,
                     order_by_size = False, return_extra = False, verbose = 0):
     '''
-    
+    Train an X-DEC model
     
     Parameters
     ----------
@@ -623,7 +623,8 @@ def compute_cluster_stability(feature_array, n_cluster, k = 10, rep=5,
                               model_type = "autoencoder", save= True,
                               save_name = "stability_check"):
     '''
-    
+    Calculates cluster stability by retraining a clustering model many times.
+    Can be performed for DEC as well as X-DEC.
 
     Parameters
     ----------
@@ -1270,44 +1271,6 @@ def compare_clusters(clusters1 , clusters2, Z1, Z2, df1, df2, descriptives1,
         
         print(f"MUMC+ cluster {idx_max[1][0]+1} is most similar to SICS cluster {idx_max[0][0]+1}")
         
-    
-    # ====================== #
-    # outcome gower distance #
-    # ====================== #
-    # outcomes = ["vasoactive", "mort_icu", "icu_los", "apacheIV_subgroup1"]
-    
-    # # Standardise length of stay variable
-    # descriptives1[["icu_los"]], scaler = scale_data(descriptives1[["icu_los"]],
-    #                                                 method = "standardise")
-    # descriptives2[["icu_los"]] = scaler.transform(descriptives2[["icu_los"]])
-    
-    # # Compute
-    # descriptives_dist = gower.gower_matrix(
-    #     descriptives1[outcomes], descriptives2[outcomes],
-    #     cat_features = descriptives1[outcomes].columns != "icu_los")
-    
-    # # Compte distance between all clusters based on Z euclidean distance
-    # descriptives_cluster_dist_mat = pd.DataFrame(index = np.unique(clusters1),
-    #                                   columns = np.unique(clusters1))
-    # for i in descriptives_cluster_dist_mat.index:
-    #     for j in descriptives_cluster_dist_mat.columns:
-    #         descriptives_cluster_dist_mat.iloc[i,j] = pd.DataFrame(descriptives_dist).loc[
-    #             clusters1==i, clusters2==j].mean().mean()
-            
-    # # Check for most similar clusters based on Z euclidean distance
-    # mapper = descriptives_cluster_dist_mat.copy()
-    # descriptives_clusters_mapped = np.unique(clusters1).copy()
-    # while not mapper.isna().all().all():
-    #     idx_max = np.where(mapper == np.nanmin(mapper))
-
-    #     descriptives_clusters_mapped[idx_max[1][0]] = idx_max[0][0]
-        
-    #     # Remove mapped cluster from mapper
-    #     if exclusive_mapping:
-    #         mapper.iloc[idx_max[0][0], :] = np.nan
-    #     mapper.iloc[:, idx_max[1][0]] = np.nan
-    #     print(f"MUMC+ cluster {idx_max[1][0]+1} is most similar to SICS cluster {idx_max[0][0]+1}")
-    
     
     # ================ #
     # heatmap distance #

@@ -56,7 +56,7 @@ seed = 5192
 datafolder = "data/"
 
 # Specify if files and figures should be saved locally (will overwrite)
-save_file = False
+save_file = True
 
 # %% Loadprevious model results
 load_previous_data = True # Set to False if you want to load your own data
@@ -164,7 +164,7 @@ if load_previous_results == False:
         # Impute the missing data
         df, df_mumc, kernel_sics, kernel_mumc = impute_data(df, df_mumc,
                                                             showit = True,
-                                                            n_imputations = 100,
+                                                            n_imputations = 5,
                                                             n_opt_steps=10,
                                                             n_iterations=10,
                                                             seed = seed)
@@ -178,7 +178,7 @@ if load_previous_results == False:
             kernel_mumc.save_kernel(f"{datafolder}mumc_kernel")
             df.to_csv(f"{datafolder}df_sics_dummy_imputed.csv")
             df_mumc.to_csv(f"{datafolder}df_mumc_dummy_imputed.csv")
-        
+
 
 # %% Scale data
 if load_previous_results == False:
@@ -334,6 +334,8 @@ sics_orig_cluster_mappings = compare_clusters(y_pred_sics_orig,
 
 # Save the results locally
 if save_file:
+    if not os.path.exists(f"{datafolder}sics_orig"):
+        os.makedirs(f"{datafolder}sics_orig")
     pd.DataFrame(y_pred_sics_orig).to_csv(f"{datafolder}y_pred_sics_orig.csv",
                                           header =False, index = False)
     pd.DataFrame(y_pred_mumc_orig).to_csv(f"{datafolder}y_pred_mumc_orig.csv",
@@ -450,6 +452,8 @@ optimal_hyperparameters = result_df[result_df.stability_mean == np.max(
 
 # Save the results locally
 if save_file:
+    if not os.path.exists(f"{datafolder}SICS_xvae_tuned"):
+        os.makedirs(f"{datafolder}SICS_xvae_tuned")
     pd.DataFrame(labels).to_csv(f"{datafolder}y_pred_SICS_xvae_tuned.csv",
                                           header =False, index = False)
     cluster_stab.to_csv(f"{datafolder}SICS_xvae_tuned/"\
@@ -579,6 +583,8 @@ xvae_cluster_mappings = compare_clusters(y_pred_sics_xvae,
 
 # Save the results locally
 if save_file:
+    if not os.path.exists(f"{datafolder}sics_xvae"):
+        os.makedirs(f"{datafolder}sics_xvae")
     pd.DataFrame(y_pred_sics_xvae).to_csv(f"{datafolder}y_pred_sics_xvae.csv",
                                           header =False, index = False)
     pd.DataFrame(y_pred_mumc_xvae).to_csv(f"{datafolder}y_pred_mumc_xvae.csv",
@@ -593,3 +599,210 @@ if save_file:
     y_pred_stab_sics_xvae.to_csv(f"{datafolder}sics_xvae/y_pred_stab_sics_xvae.csv")
     model_sics_xvae.save(f"{datafolder}sics_xvae/model_sics_xvae")
     encoder_sics_xvae.save_model(f"{datafolder}sics_xvae/encoder_sics_xvae")
+
+
+# %% Tune DEC on SICS data
+# Get data as numpy arrays
+x = np.asarray(df)
+x_mumc = np.asarray(df_mumc)
+
+# Specify some DEC parameters
+n_cluster_list = [6]
+batch_size_list = [64]
+e_list= [4, 8, 12, 16]
+h_list = [16, 32, 64, 128]
+mapper = "jaccard"
+k = 10
+rep = 3
+
+# Generate hyperparameter grid
+hyperparameter_grid_dec = np.array([(n_cluster, batch_size, e, h) 
+                                for n_cluster in n_cluster_list
+                                for batch_size in batch_size_list
+                                for e in e_list
+                                for h in h_list])
+result_df_dec = pd.DataFrame(hyperparameter_grid_dec, columns = ['n_cluster',
+                                                         'batch_size',
+                                                         'e',
+                                                         'h'])
+result_df_dec['stability_mean'] = np.nan
+result_df_dec['stability_stdev'] = np.nan
+
+# Initiate temp variable to store stability scores
+df_stab_temp_dec = np.repeat(np.nan, k*rep)
+
+# Run X-DEC and compute stability for all hyperparameter cominations
+t_dec_tuning = time.time()
+warnings.filterwarnings('ignore')
+for i in range(len(hyperparameter_grid_dec)):
+    try:
+        (cluster_stab_dec, Z_dec, y_pred_dec,
+        centroids_dec, y_pred_stab_dec, model_dec,
+         encoder_dec) = compute_cluster_stability(
+             x, n_cluster = hyperparameter_grid_dec[i][0].astype(int),
+             batch_size = hyperparameter_grid_dec[i][1].astype(int),
+             neurons_e = hyperparameter_grid_dec[i][2].astype(int),
+             neurons_h = hyperparameter_grid_dec[i][3].astype(int),
+             k = k, rep = rep, mapper = mapper, majority_vote=True,
+             save = save_file,
+             return_extra = True,
+             save_name=f"Orginal_SICS_model_hyperparamter_set{i}")
+        if mapper == "jaccard":
+            result_df_dec.loc[i,"stability_mean"] = cluster_stab_dec.mean(axis=1).mean()
+            result_df_dec.loc[i,"stability_stdev"] = cluster_stab_dec.std(axis=1).mean()
+        else:
+            result_df_dec.loc[i,"stability_mean"] = np.mean(cluster_stab_dec)
+    except:
+        print("Error: stability could not be computed."\
+              "\nSkipping to next iteration.")
+    print(f"stability: {round(np.mean(cluster_stab_dec),2)}%")
+    print(f"Completed {(i+1)}/{len(hyperparameter_grid_dec)} clustering architectures.")
+    print(f"Average iteration time: {np.round(((time.time()-t_dec_tuning)/(i+1))/60,2)} minutes")
+    
+    # Save results every 10 iterations
+    if i%10 == 0:
+        result_df_dec.to_csv("stats/SICS_dec_clustering_optimisation_results_temp.csv",
+                         index = False)
+
+print(f"Cluster tuning took {np.round((time.time()-t_dec_tuning)/60,0)} minutes")
+
+# Save hyperparameter optimisation results locally
+result_df_dec.to_csv("stats/SICS_dec_clustering_optimisation_results_03-11-2023_mumc_30it.csv",
+                     index = False)
+
+t_dec_tuning = time.time() - t_dec_tuning
+
+# Extract optimal hyperparameters
+optimal_hyperparameters_dec = result_df_dec[result_df_dec.stability_mean == np.max(
+    result_df_dec.stability_mean)]
+
+# Save the results locally
+if save_file:
+    if not os.path.exists(f"{datafolder}SICS_dec_tuned"):
+        os.makedirs(f"{datafolder}SICS_dec_tuned")
+    pd.DataFrame(y_pred_dec).to_csv(f"{datafolder}y_pred_SICS_dec_tuned.csv",
+                                    header =False, index = False)
+    cluster_stab_dec.to_csv(f"{datafolder}SICS_dec_tuned/"\
+                        "cluster_stab_mumc_dec_tuned.csv")
+    pd.DataFrame(Z_dec).to_csv(f"{datafolder}SICS_dec_tuned/Z_sics_dec_tuned.csv")
+    pd.DataFrame(centroids_dec).to_csv(f"{datafolder}SICS_dec_tuned/"\
+                                             "centroids_SICS_dec_tuned.csv")
+    y_pred_stab_dec.to_csv(f"{datafolder}SICS_dec_tuned/y_pred_stab_SICS_dec_tuned.csv")
+    model_dec.save(f"{datafolder}SICS_dec_tuned/model_SICS_dec_tuned")
+    encoder_dec.save(f"{datafolder}SICS_dec_tuned/encoder_sics_dec_tuned")
+
+
+# %% Validate recreated SICS model with optimised hyper parameter values
+# Specify if files and figures should be saved locally (will overwrite)
+# Get data as numpy arrays
+x = np.asarray(df)
+x_mumc = np.asarray(df_mumc)
+
+# Specify some DEC parameters
+n_cluster = 6
+batch_size = 64
+e_tuned  = int(optimal_hyperparameters_dec.e)
+h_tuned  = int(optimal_hyperparameters_dec.h)
+k = 10
+rep = 100
+
+# Run original SICS clustering model and compute cluster stability
+t_orig_tuned = time.time()
+(cluster_stab_sics_orig_tuned , Z_sics_orig_tuned , y_pred_sics_orig_tuned ,
+centroids_sics_orig_tuned , y_pred_stab_sics_orig_tuned , model_sics_orig_tuned ,
+ encoder_sics_orig_tuned ) = compute_cluster_stability(x, n_cluster = 6,
+     k = k, rep = rep, mapper = "jaccard", majority_vote=True, save = save_file,
+     neurons_e = e_tuned, neurons_h = h_tuned,
+     return_extra = True,
+     save_name=f"Orginal_SICS_model_tuned _clustering_stabiltity_k{k}_rep_{rep}")
+t_orig_tuned = time.time() - t_orig_tuned
+
+# Compute Jaccard cluster stability
+y_pred_stab_sics_orig_tuned , cluster_stab_sics_orig_tuned  = jaccard_similarity(
+    y_pred_sics_orig_tuned , y_pred_stab_sics_orig_tuned , True)
+# Compute samplewise cluster stability
+sample_sics_orig_tuned  = sample_cluster_stability(True, y_pred_sics_orig_tuned ,
+                                       y_pred_stab_sics_orig_tuned )
+
+# Create stability plots
+plot_stability(cluster_stab_sics_orig_tuned , stability_type = "cluster", save = save_file,
+               savename = "Jaccard stability boxplot - majority vote - original SICS model tuned")
+plot_stability(sample_sics_orig_tuned, stability_type = "sample", save = save_file,
+               mutation = 0.2,
+               savename = "Sample stability - majority vote - original SICS model tuned")
+
+# Apply model to MUMC+ data
+y_pred_mumc_orig_tuned  = model_sics_orig_tuned .predict(x_mumc).argmax(1)
+Z_mumc_orig_tuned  = encoder_sics_orig_tuned .predict(x_mumc)
+
+# Visualise phenotype heatmaps
+df_viz_sics_orig_tuned  = descriptives.copy().reset_index(drop=True)
+df_viz_sics_orig_tuned ["cluster"] = y_pred_sics_orig_tuned  + 1
+
+# Create heatmap of outcomes and clinical-endpoints per cluster
+# SICS_orig
+cluster_heatmap(df_viz_sics_orig_tuned , save = save_file, method = "default",
+                outcome = "admission", diagnosis_focus = True, annot = True,
+                title = "Recreated DEC tuned - SICS",
+                savename = "heatmap of admission outcomes sics_original_tuned "\
+                    " annotated - default", vmax = 144/241) # VMAX IS FIXATED HERE!
+cluster_heatmap(df_viz_sics_orig_tuned, save = save_file, method = "other",
+                outcome = "admission", diagnosis_focus = True, annot = True,
+                savename = "heatmap of admission outcomes sics_original_tuned "\
+                    " annotated - other")
+
+cluster_pca(Z_sics_orig_tuned, y_pred_sics_orig_tuned+1, plot_3D = False, multi_plot = True,
+            title = "DEC tuned - SICS",
+            save = save_file, savename = "Z Cluster PCA sics_original_tuned ")
+cluster_pca(x, y_pred_sics_orig_tuned+1, plot_3D = False, multi_plot = True,
+            save = save_file, savename = "x Cluster PCA sics_original_tuned ")
+
+# MUMC_orig
+df_viz_mumc_orig_tuned  = descriptives_mumc.copy().reset_index(drop=True)
+df_viz_mumc_orig_tuned ["cluster"] = y_pred_mumc_orig_tuned  + 1
+
+cluster_heatmap_mumc(df_viz_mumc_orig_tuned , save = save_file, method = "default",
+                     diagnosis_focus = True, annot = True,
+                     title = "Recreated DEC tuned - MUMC+",
+                     savename = "heatmap of admission outcomes mumc_original_tuned "\
+                         " annotated - default", vmax = 144/241) #VMAX IS FIXATED HERE!
+cluster_heatmap_mumc(df_viz_mumc_orig_tuned , save = save_file, method = "other",
+                     diagnosis_focus = True, annot = True,
+                     savename = "heatmap of admission outcomes mumc_original_tuned "\
+                         " annotated - other")
+
+# Create cluster plots
+cluster_pca(Z_mumc_orig_tuned , y_pred_mumc_orig_tuned +1, plot_3D = False, multi_plot = True,
+            title = "DEC - MUMC+", 
+            save = save_file, savename = "Z Cluster PCA mumc_original_tuned ")
+cluster_pca(x_mumc, y_pred_mumc_orig_tuned+1, plot_3D = False, multi_plot = True,
+            save = save_file, savename = "x Cluster PCA mumc_original_tuned ")
+
+# Check if clusters are the same across hospitals
+sics_orig_cluster_mappings_tuned = compare_clusters(y_pred_sics_orig_tuned,
+                                              y_pred_mumc_orig_tuned,
+                                              Z_sics_orig_tuned, Z_mumc_orig_tuned ,
+                                              df, df_mumc,
+                                              descriptives, descriptives_mumc,
+                                              exclusive_mapping=False,
+                                              save = save_file, filetype = "svg",
+                                              savename = "sics_orig_tuned_cluster_mappings")
+
+# Save the results locally
+if save_file:
+    if not os.path.exists(f"{datafolder}SICS_dec"):
+        os.makedirs(f"{datafolder}SICS_dec")
+    pd.DataFrame(y_pred_sics_orig_tuned).to_csv(f"{datafolder}y_pred_sics_orig_tuned.csv",
+                                          header =False, index = False)
+    pd.DataFrame(y_pred_mumc_orig_tuned).to_csv(f"{datafolder}y_pred_mumc_orig_tuned.csv",
+                                          header = False, index = False)
+    cluster_stab_sics_orig_tuned.to_csv(f"{datafolder}SICS_dec/"\
+                                  "cluster_stab_sics_orig_tuned.csv")
+    pd.DataFrame(Z_sics_orig_tuned).to_csv(f"{datafolder}SICS_dec/Z_sics_orig_tuned.csv")
+    pd.DataFrame(y_pred_sics_orig_tuned).to_csv(f"{datafolder}SICS_dec/"\
+                                          "y_pred_sics_orig_tuned.csv")
+    pd.DataFrame(centroids_sics_orig_tuned).to_csv(f"{datafolder}SICS_dec/"\
+                                             "centroids_sics_orig_tuned.csv")
+    y_pred_stab_sics_orig_tuned.to_csv(f"{datafolder}SICS_dec/y_pred_stab_sics_orig_tuned.csv")
+    model_sics_orig_tuned.save(f"{datafolder}SICS_dec/model_sics_orig_tuned")
+    encoder_sics_orig_tuned.save(f"{datafolder}SICS_dec/encoder_sics_orig_tuned")
