@@ -24,4 +24,4 @@ This code is built for a large part on code from others. Therefore we would like
 - The XVAE functionality is based on the work of [Simidjievski et al., 2019](https://www.frontiersin.org/articles/10.3389/fgene.2019.01205) (https://github.com/CancerAI-CL/IntegrativeVAEs)
 
 ## Remaining questions
-If there are any remaining questions then you can check the documentation of the functions in python. Alternatively, you can reach us at DAM-IC@outlook.com. 
+If there are any remaining questions then you can check the documentation of the functions in python. Alternatively, you can reach us at DAM-IC@mumc.nl. 
